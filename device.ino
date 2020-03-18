@@ -8,40 +8,49 @@
 #include "StatusBar.h"
 #include "DataSender.h"
 
+// Small amount of time spent between each loop. Mostly to save power.
 #define LOOP_DELAY 10
 
+// Hardware status
 static bool hasWifi = false;
 static bool hasIoTHub = false;
 
+// Status toggles
 static bool is_paused = false;
 
+// Functionality classes
 static SensorData* sensors = NULL;
 static StatusBar* statusUpdater = NULL;
 static DataSender* dataSender = NULL;
 
+// Timestamps
 uint64_t previous_loop_time;
 uint64_t current_loop_time;
 
 void setup()
 {
+    /**
+     * Hardware setup, wifi and IoT cloud connection. Sets up the two
+     * hardare status flags. If anything fails, there is not much point in
+     * continuing.
+     */
     initIoTDevKit(true);
-
     setup_comms();
 
     if(hasWifi == false)
     {
-      Screen.clean();
-      Screen.print("Err: No WIFI.");
+        Screen.clean();
+        Screen.print("Err: No WIFI.");
 
-      return;
+        return;
     }
 
     if(hasIoTHub == false)
     {
-      Screen.clean();
-      Screen.print("Err: No IotHub.");
+        Screen.clean();
+        Screen.print("Err: No IotHub.");
 
-      return;
+        return;
     }
 
     previous_loop_time = SystemTickCounterRead();
@@ -50,7 +59,7 @@ void setup()
     sensors = new SensorData();
     memset(sensors, 0, sizeof(SensorData));
 
-    statusUpdater = new StatusBar(sensors, 100);
+    statusUpdater = new StatusBar(sensors, 2000);
 
     dataSender = new DataSender(sensors, 15000);
 
@@ -60,6 +69,11 @@ void setup()
 
 void loop()
 {
+    if(hasWifi == false || hasIoTHub == false)
+    {
+        return;
+    }
+
     // Keep track of loop times
     previous_loop_time = current_loop_time;
     current_loop_time = SystemTickCounterRead();
